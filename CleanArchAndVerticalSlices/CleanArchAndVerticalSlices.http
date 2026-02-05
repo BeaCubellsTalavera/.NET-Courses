@@ -1,0 +1,6 @@
+@CleanArchAndVerticalSlices_HostAddress = http://localhost:5147
+
+GET {{CleanArchAndVerticalSlices_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
