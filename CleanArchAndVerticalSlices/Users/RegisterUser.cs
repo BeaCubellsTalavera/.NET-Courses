@@ -1,11 +1,19 @@
 namespace CleanArchAndVerticalSlices.Users;
 
-public sealed class RegisterUser(IUserRepository userRepository)
+public sealed class RegisterUser(IUserRepository userRepository, IPasswordHasher passwordHasher)
 {
     public record Request(string Email, string FirstName, string LastName, string Password);
     
     public async Task<User> Handle(Request request)
     {
+        // Race condition
+        // Option 1: introduce a lock before beginning the handle method
+        // Option 2: define a unique index inside of the DB and encapsulate the logic in the user repository
+        if (await userRepository.Exists(request.Email))
+        {
+            throw new Exception("The email is already in use");
+        }
+        
         // Creating a user
         var user = new User
         {
@@ -13,28 +21,14 @@ public sealed class RegisterUser(IUserRepository userRepository)
             Email = request.Email,
             FirstName = request.FirstName,
             LastName = request.LastName,
-            PasswordHash = "??"
+            PasswordHash = passwordHasher.Hash(request.Password)
         };
         // Storing in DB
         await userRepository.Insert(user);
         
+        // Email verification
+        
+        
         return user;
     }
-}
-
-// Clean Architecture Principles
-// When we need to interact with an external facing service (databse, email service, file system, etc)
-// we need to define a respective abstraction
-public interface IUserRepository
-{
-    Task Insert(User user);
-}
-
-public class User
-{
-    public Guid Id { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    public string Email { get; set; }
-    public string PasswordHash { get; set; }
 }
